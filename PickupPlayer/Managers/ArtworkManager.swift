@@ -12,6 +12,7 @@ class ArtworkManager {
   static let shared = ArtworkManager()
 
   private let artworksDirectory: URL
+  private var cache: [String: Data] = [:]  // キャッシュ
 
   private init() {
     // Artworksディレクトリを作成
@@ -49,6 +50,12 @@ class ArtworkManager {
   /// - Parameter path: ファイルパス（相対パス）
   /// - Returns: アートワーク画像データ
   func loadArtwork(from path: String) -> Data? {
+    // キャッシュをチェック
+    if let cachedData = cache[path] {
+      // print("💨 アートワークキャッシュヒット: \(path)")
+      return cachedData
+    }
+
     let fileURL = artworksDirectory.appendingPathComponent(path)
 
     guard FileManager.default.fileExists(atPath: fileURL.path) else {
@@ -59,6 +66,8 @@ class ArtworkManager {
     do {
       let data = try Data(contentsOf: fileURL)
       print("📂 アートワーク読み込み成功: \(path) (\(data.count) bytes)")
+      // キャッシュに保存
+      cache[path] = data
       return data
     } catch {
       print("❌ アートワーク読み込み失敗: \(error)")
@@ -69,6 +78,9 @@ class ArtworkManager {
   /// アートワークを削除
   /// - Parameter path: ファイルパス（相対パス）
   func deleteArtwork(at path: String) {
+    // キャッシュから削除
+    cache.removeValue(forKey: path)
+
     let fileURL = artworksDirectory.appendingPathComponent(path)
 
     guard FileManager.default.fileExists(atPath: fileURL.path) else {
@@ -85,6 +97,9 @@ class ArtworkManager {
 
   /// すべてのアートワークを削除（デバッグ用）
   func deleteAllArtworks() {
+    // キャッシュをクリア
+    cache.removeAll()
+
     do {
       let files = try FileManager.default.contentsOfDirectory(at: artworksDirectory, includingPropertiesForKeys: nil)
       for file in files {
