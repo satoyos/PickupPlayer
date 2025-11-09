@@ -20,13 +20,21 @@ class NowPlayingManager {
     title: String,
     duration: TimeInterval,
     currentTime: TimeInterval,
-    isPlaying: Bool
+    isPlaying: Bool,
+    artwork: UIImage? = nil
   ) {
     var nowPlayingInfo = [String: Any]()
     nowPlayingInfo[MPMediaItemPropertyTitle] = title
     nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
     nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
     nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
+
+    // アートワーク画像を設定
+    if let artwork = artwork {
+      nowPlayingInfo[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: artwork.size) { _ in
+        artwork
+      }
+    }
 
     MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
   }

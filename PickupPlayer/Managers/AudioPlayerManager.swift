@@ -8,6 +8,7 @@
 import Foundation
 import AVFoundation
 import Combine
+import UIKit
 
 class AudioPlayerManager: NSObject, ObservableObject {
   @Published var isPlaying = false
@@ -19,6 +20,7 @@ class AudioPlayerManager: NSObject, ObservableObject {
   private var timer: Timer?
   private let playbackStateManager = PlaybackStateManager.shared
   private let nowPlayingManager = NowPlayingManager.shared
+  private var cachedArtworkImage: UIImage?
 
   override init() {
     super.init()
@@ -48,6 +50,7 @@ class AudioPlayerManager: NSObject, ObservableObject {
       // エラー状態をクリア
       audioPlayer = nil
       currentAudioFile = nil
+      cachedArtworkImage = nil
       duration = 0
       currentTime = 0
       isPlaying = false
@@ -64,6 +67,13 @@ class AudioPlayerManager: NSObject, ObservableObject {
       duration = audioPlayer?.duration ?? 0
       print("✅ オーディオファイル読み込み成功: \(duration)秒")
 
+      // アートワーク画像をキャッシュ
+      if let artworkData = audioFile.artworkData {
+        cachedArtworkImage = UIImage(data: artworkData)
+      } else {
+        cachedArtworkImage = nil
+      }
+
       // 保存された再生位置を読み込む
       let savedPosition = playbackStateManager.loadPlaybackPosition(for: audioFile.id)
       if savedPosition > 0 && savedPosition < duration {
@@ -79,6 +89,7 @@ class AudioPlayerManager: NSObject, ObservableObject {
       // エラー状態をクリア
       audioPlayer = nil
       currentAudioFile = nil
+      cachedArtworkImage = nil
       duration = 0
       currentTime = 0
       isPlaying = false
@@ -158,7 +169,8 @@ class AudioPlayerManager: NSObject, ObservableObject {
       title: audioFile.title,
       duration: duration,
       currentTime: currentTime,
-      isPlaying: isPlaying
+      isPlaying: isPlaying,
+      artwork: cachedArtworkImage
     )
   }
 
