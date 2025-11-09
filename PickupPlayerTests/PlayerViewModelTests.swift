@@ -17,6 +17,8 @@ final class PlayerViewModelTests: XCTestCase {
 
   override func setUp() {
     super.setUp()
+    // SleepTimerManagerの状態をクリーンアップ
+    SleepTimerManager.shared.cancelTimer()
     mockAudioPlayerManager = AudioPlayerManager()
     viewModel = PlayerViewModel(audioPlayerManager: mockAudioPlayerManager)
     cancellables = []
@@ -218,12 +220,12 @@ final class PlayerViewModelTests: XCTestCase {
     // Arrange
     var receivedValues: [Bool] = []
     let expectation = XCTestExpectation(description: "isPlayingのPublisherが正しい値を発行する")
-    expectation.expectedFulfillmentCount = 3 // 初期値 + 2回の変更
 
     viewModel.$isPlaying
       .sink { value in
         receivedValues.append(value)
-        if receivedValues.count == 3 {
+        // 3つの値を受信したら完了
+        if receivedValues.count >= 3 {
           expectation.fulfill()
         }
       }
@@ -235,6 +237,108 @@ final class PlayerViewModelTests: XCTestCase {
 
     // Assert
     wait(for: [expectation], timeout: 1.0)
-    XCTAssertEqual(receivedValues, [false, true, false], "Publisherが正しい順序で値を発行するべき")
+    XCTAssertEqual(receivedValues.count, 3, "3つの値が発行されるべき")
+    XCTAssertEqual(receivedValues[0], false, "初期値はfalseであるべき")
+    XCTAssertEqual(receivedValues[1], true, "2番目の値はtrueであるべき")
+    XCTAssertEqual(receivedValues[2], false, "3番目の値はfalseであるべき")
+  }
+
+  // MARK: - スリープタイマーのテスト
+
+  func testViewModel_sleepTimer_initialState() {
+    // Assert
+    XCTAssertFalse(viewModel.isSleepTimerActive, "初期状態ではスリープタイマーは非アクティブであるべき")
+    XCTAssertEqual(viewModel.sleepTimerRemaining, 0, "初期状態では残り時間は0であるべき")
+  }
+
+  func testViewModel_setSleepTimer_activatesTimer() {
+    // Arrange
+    let expectation = XCTestExpectation(description: "スリープタイマーがアクティブになる")
+
+    viewModel.$isSleepTimerActive
+      .dropFirst() // 初期値をスキップ
+      .sink { isActive in
+        if isActive {
+          expectation.fulfill()
+        }
+      }
+      .store(in: &cancellables)
+
+    // Act
+    viewModel.setSleepTimer(minutes: 5)
+
+    // Assert
+    wait(for: [expectation], timeout: 1.0)
+    XCTAssertTrue(viewModel.isSleepTimerActive, "タイマー設定後はアクティブであるべき")
+    XCTAssertGreaterThan(viewModel.sleepTimerRemaining, 0, "残り時間が設定されるべき")
+  }
+
+  func testViewModel_setSleepTimer_setsCorrectDuration() {
+    // Arrange
+    let minutes = 10
+    let expectedDuration = TimeInterval(minutes * 60)
+
+    // Act
+    viewModel.setSleepTimer(minutes: minutes)
+
+    // Assert
+    XCTAssertEqual(viewModel.sleepTimerRemaining, expectedDuration, accuracy: 0.1, "正しい時間が設定されるべき")
+  }
+
+  func testViewModel_cancelSleepTimer_deactivatesTimer() {
+    // Arrange
+    viewModel.setSleepTimer(minutes: 5)
+    XCTAssertTrue(viewModel.isSleepTimerActive, "タイマーが開始されているべき")
+
+    let expectation = XCTestExpectation(description: "スリープタイマーがキャンセルされる")
+
+    viewModel.$isSleepTimerActive
+      .dropFirst() // 現在のtrueをスキップ
+      .sink { isActive in
+        if !isActive {
+          expectation.fulfill()
+        }
+      }
+      .store(in: &cancellables)
+
+    // Act
+    viewModel.cancelSleepTimer()
+
+    // Assert
+    wait(for: [expectation], timeout: 1.0)
+    XCTAssertFalse(viewModel.isSleepTimerActive, "キャンセル後はタイマーが非アクティブであるべき")
+    XCTAssertEqual(viewModel.sleepTimerRemaining, 0, "キャンセル後は残り時間が0であるべき")
+  }
+
+  func testViewModel_sleepTimerRemainingFormatted() {
+    // Arrange
+    viewModel.setSleepTimer(minutes: 5)
+
+    // Act
+    let formatted = viewModel.sleepTimerRemainingFormatted
+
+    // Assert
+    XCTAssertEqual(formatted, "5:00", "5分が正しくフォーマットされるべき")
+  }
+
+  func testViewModel_sleepTimerRemaining_synchronizesWithManager() {
+    // Arrange
+    let expectation = XCTestExpectation(description: "残り時間がSleepTimerManagerと同期する")
+
+    viewModel.$sleepTimerRemaining
+      .dropFirst() // 初期値0をスキップ
+      .sink { remaining in
+        if remaining > 0 {
+          expectation.fulfill()
+        }
+      }
+      .store(in: &cancellables)
+
+    // Act
+    viewModel.setSleepTimer(minutes: 3)
+
+    // Assert
+    wait(for: [expectation], timeout: 1.0)
+    XCTAssertGreaterThan(viewModel.sleepTimerRemaining, 0, "残り時間がマネージャーと同期しているべき")
   }
 }

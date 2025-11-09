@@ -174,4 +174,127 @@ final class NowPlayingManagerTests: XCTestCase {
     let nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo
     XCTAssertEqual(nowPlayingInfo?[MPNowPlayingInfoPropertyPlaybackRate] as? Double, 0.0, "一時停止中は再生レートが0.0であるべき")
   }
+
+  // MARK: - スリープタイマー情報のテスト
+
+  func testUpdateNowPlayingInfo_withSleepTimerRemaining() {
+    // Arrange
+    let title = "Sleep Timer Test"
+    let sleepTimerRemaining: TimeInterval = 300 // 5分
+
+    // Act
+    nowPlayingManager.updateNowPlayingInfo(
+      title: title,
+      duration: 100,
+      currentTime: 50,
+      isPlaying: true,
+      artwork: nil,
+      sleepTimerRemaining: sleepTimerRemaining
+    )
+
+    // Assert
+    let nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo
+    XCTAssertNotNil(nowPlayingInfo, "Now Playing情報が設定されているべき")
+    let artist = nowPlayingInfo?[MPMediaItemPropertyArtist] as? String
+    XCTAssertNotNil(artist, "アーティスト情報にタイマー情報が設定されているべき")
+    XCTAssertTrue(artist?.contains("🌙") == true, "タイマー情報に月アイコンが含まれているべき")
+    XCTAssertEqual(artist, "🌙 05:00", "タイマー情報が正しくフォーマットされているべき")
+  }
+
+  func testUpdateNowPlayingInfo_withSleepTimerRemaining_variousTimes() {
+    // Test Case 1: 10分30秒
+    nowPlayingManager.updateNowPlayingInfo(
+      title: "Test",
+      duration: 100,
+      currentTime: 50,
+      isPlaying: true,
+      artwork: nil,
+      sleepTimerRemaining: 630
+    )
+    var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo
+    XCTAssertEqual(nowPlayingInfo?[MPMediaItemPropertyArtist] as? String, "🌙 10:30", "10分30秒が正しくフォーマットされるべき")
+
+    // Test Case 2: 1秒
+    nowPlayingManager.updateNowPlayingInfo(
+      title: "Test",
+      duration: 100,
+      currentTime: 50,
+      isPlaying: true,
+      artwork: nil,
+      sleepTimerRemaining: 1
+    )
+    nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo
+    XCTAssertEqual(nowPlayingInfo?[MPMediaItemPropertyArtist] as? String, "🌙 00:01", "1秒が正しくフォーマットされるべき")
+
+    // Test Case 3: 59秒
+    nowPlayingManager.updateNowPlayingInfo(
+      title: "Test",
+      duration: 100,
+      currentTime: 50,
+      isPlaying: true,
+      artwork: nil,
+      sleepTimerRemaining: 59
+    )
+    nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo
+    XCTAssertEqual(nowPlayingInfo?[MPMediaItemPropertyArtist] as? String, "🌙 00:59", "59秒が正しくフォーマットされるべき")
+  }
+
+  func testUpdateNowPlayingInfo_withoutSleepTimerRemaining() {
+    // Arrange
+    let title = "No Timer Test"
+
+    // Act: タイマー情報なし
+    nowPlayingManager.updateNowPlayingInfo(
+      title: title,
+      duration: 100,
+      currentTime: 50,
+      isPlaying: true,
+      artwork: nil,
+      sleepTimerRemaining: nil
+    )
+
+    // Assert
+    let nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo
+    XCTAssertNil(nowPlayingInfo?[MPMediaItemPropertyArtist], "タイマー情報なしの場合、アーティスト情報は設定されないべき")
+  }
+
+  func testUpdateNowPlayingInfo_withZeroSleepTimerRemaining() {
+    // Arrange
+    let title = "Zero Timer Test"
+
+    // Act: 残り時間が0
+    nowPlayingManager.updateNowPlayingInfo(
+      title: title,
+      duration: 100,
+      currentTime: 50,
+      isPlaying: true,
+      artwork: nil,
+      sleepTimerRemaining: 0
+    )
+
+    // Assert
+    let nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo
+    XCTAssertNil(nowPlayingInfo?[MPMediaItemPropertyArtist], "残り時間が0の場合、アーティスト情報は設定されないべき")
+  }
+
+  func testUpdateNowPlayingInfo_sleepTimerWithArtwork() {
+    // Arrange
+    let testImage = AudioFileTestFixture.makeTestImage()
+    let sleepTimerRemaining: TimeInterval = 180 // 3分
+
+    // Act: タイマー情報とアートワークの両方を設定
+    nowPlayingManager.updateNowPlayingInfo(
+      title: "Timer with Artwork",
+      duration: 100,
+      currentTime: 50,
+      isPlaying: true,
+      artwork: testImage,
+      sleepTimerRemaining: sleepTimerRemaining
+    )
+
+    // Assert
+    let nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo
+    XCTAssertNotNil(nowPlayingInfo?[MPMediaItemPropertyArtwork], "アートワークが設定されているべき")
+    XCTAssertEqual(nowPlayingInfo?[MPMediaItemPropertyArtist] as? String, "🌙 03:00", "タイマー情報が正しく設定されているべき")
+  }
 }
