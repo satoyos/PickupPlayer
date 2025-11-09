@@ -163,4 +163,78 @@ final class PlayerViewModelTests: XCTestCase {
     // Assert
     XCTAssertEqual(mockAudioPlayerManager.currentTime, 0.0, "0秒未満にはならないべき")
   }
+
+  // MARK: - isPlaying同期のテスト
+
+  func testViewModel_isPlaying_initializesToFalse() {
+    // Assert
+    XCTAssertFalse(viewModel.isPlaying, "初期状態ではisPlayingがfalseであるべき")
+  }
+
+  func testViewModel_isPlaying_synchronizesWithManager() {
+    // Arrange
+    let expectation = XCTestExpectation(description: "isPlayingがAudioPlayerManagerと同期する")
+
+    viewModel.$isPlaying
+      .dropFirst() // 初期値をスキップ
+      .sink { value in
+        if value == true {
+          expectation.fulfill()
+        }
+      }
+      .store(in: &cancellables)
+
+    // Act: AudioPlayerManagerのisPlayingを変更
+    mockAudioPlayerManager.isPlaying = true
+
+    // Assert
+    wait(for: [expectation], timeout: 1.0)
+    XCTAssertTrue(viewModel.isPlaying, "ViewModelのisPlayingがManagerと同期しているべき")
+  }
+
+  func testViewModel_isPlaying_synchronizesFromTrueToFalse() {
+    // Arrange
+    mockAudioPlayerManager.isPlaying = true
+    let expectation = XCTestExpectation(description: "isPlayingがtrueからfalseに同期する")
+
+    viewModel.$isPlaying
+      .dropFirst() // 現在のtrueをスキップ
+      .sink { value in
+        if value == false {
+          expectation.fulfill()
+        }
+      }
+      .store(in: &cancellables)
+
+    // Act: AudioPlayerManagerのisPlayingをfalseに変更
+    mockAudioPlayerManager.isPlaying = false
+
+    // Assert
+    wait(for: [expectation], timeout: 1.0)
+    XCTAssertFalse(viewModel.isPlaying, "ViewModelのisPlayingがfalseに同期しているべき")
+  }
+
+  func testViewModel_isPlaying_publisherEmitsCorrectValues() {
+    // Arrange
+    var receivedValues: [Bool] = []
+    let expectation = XCTestExpectation(description: "isPlayingのPublisherが正しい値を発行する")
+    expectation.expectedFulfillmentCount = 3 // 初期値 + 2回の変更
+
+    viewModel.$isPlaying
+      .sink { value in
+        receivedValues.append(value)
+        if receivedValues.count == 3 {
+          expectation.fulfill()
+        }
+      }
+      .store(in: &cancellables)
+
+    // Act: 複数回の状態変更
+    mockAudioPlayerManager.isPlaying = true
+    mockAudioPlayerManager.isPlaying = false
+
+    // Assert
+    wait(for: [expectation], timeout: 1.0)
+    XCTAssertEqual(receivedValues, [false, true, false], "Publisherが正しい順序で値を発行するべき")
+  }
 }

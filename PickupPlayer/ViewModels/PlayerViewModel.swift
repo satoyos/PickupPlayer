@@ -13,12 +13,17 @@ class PlayerViewModel: ObservableObject {
   @Published var isDraggingSlider = false
   @Published var sliderValue: Double = 0
   @Published var artworkImage: UIImage?
+  @Published var isPlaying = false
 
   private let audioPlayerManager: AudioPlayerManager
   private var cancellables = Set<AnyCancellable>()
 
   init(audioPlayerManager: AudioPlayerManager) {
     self.audioPlayerManager = audioPlayerManager
+
+    // AudioPlayerManagerのisPlayingの変化を監視
+    audioPlayerManager.$isPlaying
+      .assign(to: &$isPlaying)
 
     // AudioPlayerManagerのcurrentTimeの変化を監視
     audioPlayerManager.$currentTime
@@ -47,10 +52,6 @@ class PlayerViewModel: ObservableObject {
 
   var currentAudioFile: AudioFile? {
     audioPlayerManager.currentAudioFile
-  }
-
-  var isPlaying: Bool {
-    audioPlayerManager.isPlaying
   }
 
   var currentTime: TimeInterval {
