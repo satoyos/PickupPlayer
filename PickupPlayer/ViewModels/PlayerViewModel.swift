@@ -14,8 +14,11 @@ class PlayerViewModel: ObservableObject {
   @Published var sliderValue: Double = 0
   @Published var artworkImage: UIImage?
   @Published var isPlaying = false
+  @Published var sleepTimerRemaining: TimeInterval = 0
+  @Published var isSleepTimerActive = false
 
   private let audioPlayerManager: AudioPlayerManager
+  private let sleepTimerManager = SleepTimerManager.shared
   private var cancellables = Set<AnyCancellable>()
 
   init(audioPlayerManager: AudioPlayerManager) {
@@ -46,6 +49,13 @@ class PlayerViewModel: ObservableObject {
         }
       }
       .store(in: &cancellables)
+
+    // SleepTimerManagerの状態を監視
+    sleepTimerManager.$isActive
+      .assign(to: &$isSleepTimerActive)
+
+    sleepTimerManager.$remainingTime
+      .assign(to: &$sleepTimerRemaining)
   }
 
   // MARK: - Computed Properties
@@ -71,6 +81,10 @@ class PlayerViewModel: ObservableObject {
     TimeFormatter.formatTime(duration)
   }
 
+  var sleepTimerRemainingFormatted: String {
+    TimeFormatter.formatTime(sleepTimerRemaining)
+  }
+
   // MARK: - Actions
 
   func togglePlayPause() {
@@ -94,5 +108,23 @@ class PlayerViewModel: ObservableObject {
     if !editing {
       audioPlayerManager.seek(to: sliderValue)
     }
+  }
+
+  // MARK: - Sleep Timer Actions
+
+  func setSleepTimer(minutes: Int) {
+    let duration = TimeInterval(minutes * 60)
+    sleepTimerManager.startTimer(duration: duration) { [weak self] in
+      self?.onSleepTimerEnd()
+    }
+  }
+
+  func cancelSleepTimer() {
+    sleepTimerManager.cancelTimer()
+  }
+
+  private func onSleepTimerEnd() {
+    // 現在の再生位置を保存してからフェードアウト
+    audioPlayerManager.fadeOutAndStop()
   }
 }

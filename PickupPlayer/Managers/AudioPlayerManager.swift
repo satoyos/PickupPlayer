@@ -21,6 +21,9 @@ class AudioPlayerManager: NSObject, ObservableObject {
   private let playbackStateManager = PlaybackStateManager.shared
   private let nowPlayingManager = NowPlayingManager.shared
   private var cachedArtworkImage: UIImage?
+  private var fadeOutTimer: Timer?
+  private var isFadingOut = false
+  private let sleepTimerManager = SleepTimerManager.shared
 
   override init() {
     super.init()
@@ -148,7 +151,10 @@ class AudioPlayerManager: NSObject, ObservableObject {
     timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
       guard let self = self, let player = self.audioPlayer else { return }
       self.currentTime = player.currentTime
-      self.saveCurrentPosition()
+      // フェードアウト中は再生位置を保存しない
+      if !self.isFadingOut {
+        self.saveCurrentPosition()
+      }
       self.updateNowPlaying()
     }
   }
@@ -165,12 +171,14 @@ class AudioPlayerManager: NSObject, ObservableObject {
 
   private func updateNowPlaying() {
     guard let audioFile = currentAudioFile else { return }
+    let sleepTimerRemaining = sleepTimerManager.isActive ? sleepTimerManager.remainingTime : nil
     nowPlayingManager.updateNowPlayingInfo(
       title: audioFile.title,
       duration: duration,
       currentTime: currentTime,
       isPlaying: isPlaying,
-      artwork: cachedArtworkImage
+      artwork: cachedArtworkImage,
+      sleepTimerRemaining: sleepTimerRemaining
     )
   }
 
@@ -216,8 +224,45 @@ class AudioPlayerManager: NSObject, ObservableObject {
     }
   }
 
+  // スリープタイマー用：5秒間でフェードアウトして停止
+  func fadeOutAndStop() {
+    guard let player = audioPlayer, isPlaying else { return }
+
+    isFadingOut = true
+    let fadeDuration: TimeInterval = 5.0
+    let fadeSteps = 100
+    let fadeInterval = fadeDuration / Double(fadeSteps)
+    let volumeDecrement = player.volume / Float(fadeSteps)
+
+    var currentStep = 0
+
+    fadeOutTimer = Timer.scheduledTimer(withTimeInterval: fadeInterval, repeats: true) { [weak self] timer in
+      guard let self = self, let player = self.audioPlayer else {
+        timer.invalidate()
+        return
+      }
+
+      currentStep += 1
+
+      if currentStep >= fadeSteps {
+        // フェードアウト完了
+        player.volume = 0
+        timer.invalidate()
+        self.fadeOutTimer = nil
+        self.pause()
+        self.isFadingOut = false
+        // 音量を元に戻す
+        player.volume = 1.0
+      } else {
+        // 音量を徐々に下げる
+        player.volume = max(0, player.volume - volumeDecrement)
+      }
+    }
+  }
+
   deinit {
     stopTimer()
+    fadeOutTimer?.invalidate()
     NotificationCenter.default.removeObserver(self)
   }
 }

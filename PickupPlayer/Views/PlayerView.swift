@@ -9,6 +9,7 @@ import SwiftUI
 
 struct PlayerView: View {
   @StateObject private var viewModel: PlayerViewModel
+  @State private var showSleepTimerSheet = false
 
   init(audioPlayerManager: AudioPlayerManager) {
     _viewModel = StateObject(wrappedValue: PlayerViewModel(audioPlayerManager: audioPlayerManager))
@@ -43,6 +44,35 @@ struct PlayerView: View {
           .lineLimit(2)
           .multilineTextAlignment(.center)
           .padding(.horizontal)
+      }
+
+      // スリープタイマー表示 / 設定ボタン（入れ替え表示）
+      if viewModel.isSleepTimerActive {
+        // タイマー有効時：残り時間を表示
+        HStack {
+          Image(systemName: "moon.fill")
+            .foregroundColor(.orange)
+          Text(viewModel.sleepTimerRemainingFormatted)
+            .font(.subheadline)
+            .foregroundColor(.orange)
+          Spacer()
+          Button("キャンセル") {
+            viewModel.cancelSleepTimer()
+          }
+          .font(.caption)
+          .foregroundColor(.orange)
+        }
+        .padding(.horizontal)
+      } else {
+        // タイマー無効時：設定ボタンを表示
+        Button(action: {
+          showSleepTimerSheet = true
+        }) {
+          HStack {
+            Image(systemName: "moon")
+            Text("スリープタイマー")
+          }
+        }
       }
 
       // 再生時間表示
@@ -88,5 +118,28 @@ struct PlayerView: View {
       .padding(.bottom, 20)
     }
     .padding()
+    .confirmationDialog("スリープタイマー", isPresented: $showSleepTimerSheet) {
+      Button("5分") {
+        viewModel.setSleepTimer(minutes: 5)
+      }
+      Button("10分") {
+        viewModel.setSleepTimer(minutes: 10)
+      }
+      Button("15分") {
+        viewModel.setSleepTimer(minutes: 15)
+      }
+      Button("20分") {
+        viewModel.setSleepTimer(minutes: 20)
+      }
+      Button("30分") {
+        viewModel.setSleepTimer(minutes: 30)
+      }
+      if viewModel.isSleepTimerActive {
+        Button("キャンセル", role: .destructive) {
+          viewModel.cancelSleepTimer()
+        }
+      }
+      Button("閉じる", role: .cancel) {}
+    }
   }
 }

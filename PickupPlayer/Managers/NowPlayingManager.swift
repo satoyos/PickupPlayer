@@ -21,13 +21,21 @@ class NowPlayingManager {
     duration: TimeInterval,
     currentTime: TimeInterval,
     isPlaying: Bool,
-    artwork: UIImage? = nil
+    artwork: UIImage? = nil,
+    sleepTimerRemaining: TimeInterval? = nil
   ) {
     var nowPlayingInfo = [String: Any]()
     nowPlayingInfo[MPMediaItemPropertyTitle] = title
     nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
     nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
     nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
+
+    // スリープタイマー情報をアーティスト欄に表示
+    if let remaining = sleepTimerRemaining, remaining > 0 {
+      let minutes = Int(remaining) / 60
+      let seconds = Int(remaining) % 60
+      nowPlayingInfo[MPMediaItemPropertyArtist] = String(format: "🌙 %02d:%02d", minutes, seconds)
+    }
 
     // アートワーク画像を設定
     if let artwork = artwork {
