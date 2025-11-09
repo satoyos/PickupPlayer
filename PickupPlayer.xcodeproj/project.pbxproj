@@ -34,9 +34,22 @@
 		92CA0F9C2EBC6B5C000582DB /* PickupPlayerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PickupPlayerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		928CAA302EC02AF600DAAF61 /* Exceptions for "PickupPlayer" folder in "PickupPlayer" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 92CA0F842EBC6B5B000582DB /* PickupPlayer */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		92CA0F872EBC6B5B000582DB /* PickupPlayer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				928CAA302EC02AF600DAAF61 /* Exceptions for "PickupPlayer" folder in "PickupPlayer" target */,
+			);
 			path = PickupPlayer;
 			sourceTree = "<group>";
 		};
@@ -407,6 +420,7 @@
 				DEVELOPMENT_TEAM = 4B4EJ2GHFC;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PickupPlayer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Pickup Player";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "音楽ライブラリからオーディオファイルを選択して再生するために使用します。";
@@ -444,6 +458,7 @@
 				DEVELOPMENT_TEAM = 4B4EJ2GHFC;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PickupPlayer/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Pickup Player";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "音楽ライブラリからオーディオファイルを選択して再生するために使用します。";
