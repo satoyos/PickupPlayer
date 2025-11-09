@@ -138,3 +138,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **コード分析や実装検討**: 日本語で説明すること
 - **技術的な議論**: 日本語で行うこと
 
+### ビルドとテスト
+- **使用するシミュレータ**: `iPhone 17`
+- **ビルドコマンド例**:
+  ```bash
+  xcodebuild -project PickupPlayer.xcodeproj -scheme PickupPlayer \
+    -destination 'platform=iOS Simulator,name=iPhone 17' build
+  ```
+
